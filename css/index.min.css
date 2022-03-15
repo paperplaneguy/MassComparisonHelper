@@ -1,0 +1,22 @@
+body { font-family: "American Typewriter"; font-weight: lighter; font-size: 18px; margin: 10px; }
+
+#title { font-size: 2em; }
+
+div[contenteditable] { outline: none; display: inline-block; overflow-wrap: break-word; }
+
+div[contenteditable]:empty::before { content: attr(placeholder); color: grey; }
+
+ol { margin: 0; }
+
+.sign { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+
+button { float: right; position: relative; top: 10px; display: none; }
+
+.suggestion { opacity: 0.5; }
+
+#addnotes { font-size: small; bottom: 0; position: fixed; background-color: white; width: 100%; display: block; }
+
+#empty { width: 100%; }
+
+@media (prefers-color-scheme: dark) { body, #addnotes { background-color: black; color: white; } }
+/*# sourceMappingURL=index.min.css.map */

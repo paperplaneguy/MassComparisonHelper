@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>mass comparison helper</title>
+        <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+        <link rel="stylesheet" href="./css/index.min.css">
+    </head>
+    <body>
+        <script>
+            var createElement = document.createElement.bind(document)
+
+            function appendFactAsLi(parent, html) {
+                let _listItem = createElement("li")
+                _listItem.insertAdjacentHTML('beforeend', html)
+                parent.appendChild(_listItem)
+            }
+
+            function deleteSecondFact(fact) {
+                let previous = fact.previousSibling
+                while(previous) {
+                    if(previous.nodeType != 1)
+                        previous.remove()
+                    else if(previous.tagName != "DIV")
+                        previous.remove()
+                    else
+                        break
+                    previous = fact.previousSibling
+                }
+                fact.previousElementSibling.focus();
+                ( contentEditableElement => { //focus to EOL
+                    range = document.createRange()
+                    range.selectNodeContents(contentEditableElement)
+                    range.collapse(false)
+
+                    selection = window.getSelection()
+                    selection.removeAllRanges()
+                    selection.addRange(range)
+                } ) (fact.previousElementSibling)
+                fact.remove()
+            }
+
+            function doReordering() {
+                    let mainOl     = document.getElementsByTagName("ol")[0]
+                    let sortedList = getUnsortedElementList()
+
+                    sortedList.sort( (a, b) => {
+                        if(a.count == b.count)
+                            return (a.factCount < b.factCount) ? 1 : -1
+                        return (parseInt(a.count) < parseInt(b.count)) ? 1 : -1
+                    } )
+                    
+                    mainOl.textContent = ''
+                    sortedList.forEach( c => {
+                         mainOl.appendChild(c.element)
+                    } )
+                    reorderButtonHide()
+            }
+
+            function factHtml(thing = 'pro', text = '') {
+                return `
+                    <span class="sign" onclick="signChange(this)">` + ( (thing == 'pro') ? '+' : '-' ) + `</span>:
+                    <div class="fact" type="text" placeholder="` + thing + `" onkeyup="factOnKeyUp(event)" onkeydown="return factOnKeyDown(event)" contenteditable>` + text + `</div>
+                `
+            }
+
+            let suggestionActive = false
+            function factOnKeyUp(e) {
+                function removeActiveSuggestion() {
+                    Array.from( document.getElementsByClassName("suggestion") ).forEach( c => c.remove() )
+                }
+                let fact = e.target
+                updateCounter(fact)
+
+                let whatsWritten = fact.textContent
+                if( whatsWritten.trim() ) {
+                    removeActiveSuggestion()
+                    let suggestion = ""
+                    for(let i = 0; i < window.d_factsList.length; i++)
+                        if( window.d_factsList[i].startsWith(whatsWritten) ) {
+                            suggestion = window.d_factsList[i]
+                            break
+                        }
+                    if(suggestion) {
+                        fact.insertAdjacentHTML("afterend", `<span class="suggestion">` + suggestion.replace(whatsWritten, '') + "</span>")
+                        suggestionActive = true
+                    }
+                } else
+                    if(suggestionActive) {
+                        removeActiveSuggestion()
+                        suggestionActive = false
+                    }
+            }
+
+            function factOnKeyDown(e) {
+                let fact = e.target
+                let li = fact.parentElement
+            
+                function addNewLi() {
+                    let ol = li.parentElement
+                    if(fact.textContent) {
+                        appendFactAsLi( ol, factHtml() )
+                        ol.lastElementChild.lastElementChild.focus()
+                    } else {
+                        fact.parentElement.remove()
+                        
+                        let outerLi = ol.parentElement
+                        outerLi.insertAdjacentHTML("afterend", `
+                            <li>
+                                <div class="item" onkeydown="return rejectEnters(event)" role="textbox" placeholder="Item" contenteditable></div>  [<span class="counter">±8</span>]
+                                <ol type="a">
+                                    <li>`
+                                        + factHtml() +
+                                   `</li>
+                                </ol>
+                            </li>
+                        `)
+                        outerLi.nextElementSibling.firstElementChild.focus()
+                    }
+
+                }
+
+                function placeCaretAtEnd(el) {
+                    el.focus();
+                    if (typeof window.getSelection != "undefined"
+                            && typeof document.createRange != "undefined") {
+                        var range = document.createRange();
+                        range.selectNodeContents(el);
+                        range.collapse(false);
+                        var sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    } else if (typeof document.body.createTextRange != "undefined") {
+                        var textRange = document.body.createTextRange();
+                        textRange.moveToElementText(el);
+                        textRange.collapse(false);
+                        textRange.select();
+                    }
+                }
+
+                if(e.keyCode == 8) { //backspace
+                    if(!fact.textContent) {
+                        if(li.getElementsByClassName("fact").length > 1)
+                            deleteSecondFact(fact)
+                        else if(li.parentElement.getElementsByClassName("fact").length > 1) {
+                            let previousLi = li.previousElementSibling
+                            li.remove()
+                            placeCaretAtEnd(previousLi.lastElementChild)
+                        }
+                        return false
+                    }
+                }
+
+                if(e.keyCode == 9) { //tab key
+                    if(fact.textContent) {
+                        if(fact.getAttribute("placeholder") == 'pro') {
+                            if(!fact.nextElementSibling)
+                                fact.insertAdjacentHTML( 'afterend', ` | ` + factHtml('con') )
+                            fact.nextElementSibling.nextElementSibling.focus()
+                        } else {
+                            if(li.getElementsByClassName('fact').length == 1) {
+                                li.insertAdjacentHTML( 'afterbegin', factHtml() + ' | ')
+                                li.firstElementChild.nextElementSibling.focus()
+                            }
+                            else addNewLi()
+                        }
+                    } else signChange(fact.previousElementSibling)
+                    return false
+                }
+
+                if(e.keyCode == 13) { //enter key
+                    //implement, if there's only one "-" in the thing add a plus before it
+                    addNewLi()
+                    return false
+                }
+            }
+
+            function getUnsortedElementList() {
+                let mainOl = document.getElementsByTagName("ol")[0]
+                let sortedList = []
+
+                for( let counter of mainOl.getElementsByClassName('counter') ) {
+                    let outerLi = counter.parentElement
+                    sortedList.push({
+                        count    : counter.textContent,
+                        element  : outerLi,
+                        factCount: outerLi.getElementsByClassName("fact").length
+                    })
+                }
+                
+                return sortedList
+            }
+
+            function rejectEnters(e) {
+                if(e.keyCode == 13)
+                    return false
+            }
+
+            function reorderButtonHide() {
+                document.getElementsByTagName("button")[0].removeAttribute('style')
+            }
+
+            function signChange(e) {
+                var factDiv = e.nextElementSibling
+                if(e.textContent == "-") {
+                    e.textContent = "+"
+                    factDiv.setAttribute("placeholder", "pro")
+                }
+                else {
+                    e.textContent = "-"
+                    factDiv.setAttribute("placeholder", "con")
+                }
+
+                let li = factDiv.parentElement
+                if(li.getElementsByClassName('fact').length > 1) {
+                    let previous = factDiv.previousSibling
+                    while(previous) {
+                        if(previous.nodeType == 1)
+                            if(previous.tagName == 'DIV')
+                                break
+                        previous = previous.previousSibling
+                    }
+                    let placeholder = previous.getAttribute("placeholder")
+                    if( (placeholder == "pro" && e.textContent == "+") || (placeholder == "con" && e.textContent == "-") ) {
+                        let factContents = factDiv.textContent
+                        deleteSecondFact(factDiv)
+
+                        let ol = li.parentElement
+                        appendFactAsLi( ol, factHtml(e.textContent == "+" ? "pro" : "con", factContents) )
+                        factDiv = ol.lastElementChild.lastElementChild
+                        factDiv.focus()
+                    }
+                }
+
+                updateCounter(factDiv)
+            }
+
+            function titleChanger(title) {
+                if(title)
+                    document.title = title + ' - mass comparison helper'
+                else
+                    document.title = "mass comparison helper"
+            }
+
+            function updateCounter(e) {
+                var itemLi = e.parentElement.parentElement.parentElement
+
+                var counterCount = 0, factsLength = 0
+                for( let fact of itemLi.getElementsByClassName("fact") ) {
+                    factsLength++
+                    if(fact.textContent) {
+                        if(fact.getAttribute("placeholder") == 'pro')
+                            counterCount++
+                        else
+                            counterCount--
+                    }
+                }
+                
+                var counter = itemLi.getElementsByClassName("counter")[0]
+                let previousCount = counter.textContent
+
+                if(factsLength == 1 && !counterCount)
+                    counter.textContent = "±8"
+                else
+                    counter.textContent = counterCount
+                
+                if(previousCount != counter.textContent) {
+                    sortedList = getUnsortedElementList()
+
+                    if(sortedList.length > 1) {
+                        if( !sortedList.every( (c, i, array) => {
+                            if(i == 0)
+                                return true
+                            prevCount = parseInt(array[i-1].count)
+                            currCount = parseInt(c.count)
+                            if(prevCount == currCount)
+                                return array[i-1].factCount >= c.factCount
+                            return prevCount >= currCount
+                        } ) )
+                            document.getElementsByTagName("button")[0].style.display = "initial"
+                        else
+                            reorderButtonHide()
+                    } else
+                        reorderButtonHide()
+                }
+            }
+        </script>
+
+        <div id="title" onkeyup="titleChanger(this.textContent)" onkeydown="return rejectEnters(event)" role="textbox" placeholder="TITLE" contenteditable></div>
+        <button type="button" onclick="doReordering()">reorder</button>
+        <ol>
+            <li>
+                <div class="item" onkeydown="return rejectEnters(event)" role="textbox" placeholder="Item" contenteditable></div>  [<span class="counter">±8</span>]
+                <ol type="a">
+                    <li>
+                        <script>
+                            document.write( factHtml() )
+                        </script>
+                    </li>
+                </ol>
+            </li>
+        </ol>
+
+        <div id="empty"></div>
+        <div id="notescontainer">
+            <div id="addnotes" placeholder="add notes..." contenteditable></div>
+        </div>
+
+        <script>
+            const FileSync    = require('lowdb/adapters/FileSync')
+            const ipcRenderer = require('electron').ipcRenderer
+            const lowDB       = require('lowdb')
+            const titleElement = document.getElementById("title")
+
+            function fileOpen(location) {
+                const db = lowDB( new FileSync(location) )
+                    titleElement.textContent = db.get('meta.title').value()
+                    if( db.get('meta.notes').value() ) {
+                        let addnotesDiv = document.getElementById("addnotes")
+                        addnotesDiv.innerHTML = db.get('meta.notes').value()
+                        document.getElementById("empty").style.height = addnotesDiv.clientHeight + "px"
+                        console.log(addnotesDiv.offsetHeight)
+                    }
+
+                    const itemList = titleElement.nextElementSibling.nextElementSibling
+                    itemList.textContent = ''
+                    db.get('items').value().forEach(item => {
+                        let listItem = createElement('li')
+                        listItem.insertAdjacentHTML('beforeend', `
+                            <div class="item" onkeydown="return rejectEnters(event)" role="textbox" placeholder="Item" contenteditable>` + item.item + `</div>  [<span class="counter">±8</span>]
+                        `)
+
+                        let factsList = createElement('ol')
+                        factsList.setAttribute('type', 'a')
+                        item.facts.forEach(fact => {
+                            let html = factHtml(fact.thing, fact.text)
+                            if(factsList.childElementCount > 0) {
+                                let lastLi = factsList.lastElementChild
+                                if(lastLi.getElementsByClassName("fact").length == 1 && (c => { return ( c == 'pro' ? 'con' : 'pro') })( lastLi.lastElementChild.getAttribute("placeholder") ) == fact.thing)
+                                    lastLi.insertAdjacentHTML('beforeend', ' | ' + html)
+                                else
+                                    appendFactAsLi(factsList, html)
+                            } else
+                                appendFactAsLi(factsList, html)
+                        })
+                        listItem.appendChild(factsList)
+                        itemList.appendChild(listItem)
+                    })
+                    for (let item of itemList.children)
+                        updateCounter(item.lastElementChild.lastElementChild.lastElementChild)
+                    //todo: make a list of all the facts and put them in the memory
+                    window.d_factsList = []
+                    for ( fact of document.getElementsByClassName("fact") )
+                        d_factsList.push(fact.innerHTML)
+                    window.d_factsList = [...new Set(d_factsList)]
+                    return false
+            }
+
+            let openWith = ipcRenderer.sendSync('query-open-with', null)
+            if(openWith) {
+                fileOpen(openWith)
+            }
+
+            let fileLocation = false
+            window.addEventListener('keydown', (event) => {
+                if(event.metaKey && event.keyCode == 83) { //filesave
+                    const title = titleElement.textContent
+
+                    const fs = require('fs')
+                    if(!fileLocation) {
+                        fileLocation = ipcRenderer.sendSync('query-save-location', title)
+                        if( fs.existsSync(fileLocation) )
+                            fs.unlinkSync(fileLocation)
+                    } else {
+                        fs.unlinkSync(fileLocation)
+                    }
+
+                    const db = lowDB( new FileSync(fileLocation) )
+                    db.defaults({meta: {}, items: []}).write()
+                    db.set('meta.title', title).write()
+                    if(document.getElementById("addnotes").textContent)
+                        db.set('meta.notes', document.getElementById("addnotes").innerHTML).write()
+
+                    for( let item of document.getElementsByClassName("item") ) {
+                        var facts = []
+                        for( let fact of item.parentElement.getElementsByClassName("fact") ) {
+                            facts.push({
+                                thing: fact.getAttribute('placeholder'),
+                                text: fact.textContent
+                            })
+                        }
+                        db.get('items').push({
+                            item: item.textContent,
+                            facts: facts
+                        }).write()
+                    }
+
+                    return false
+                } else if(event.metaKey && event.keyCode == 79) { //file open
+                    fileLocation = ipcRenderer.sendSync('query-open-location', null)[0]
+                    fileOpen(fileLocation)
+                }
+            }, true)
+        </script>
+    </body>
+</html>
