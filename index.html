@@ -355,7 +355,8 @@
                     window.d_factsList = [...new Set(d_factsList)]
                     return false
             }
-
+            
+            //if the app was dragged onto the dock or used with open-with:
             let openWith = ipcRenderer.sendSync('query-open-with', null)
             if(openWith) {
                 fileOpen(openWith)

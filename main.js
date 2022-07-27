@@ -1,7 +1,10 @@
+const { create } = require('domain')
 const { app, dialog, BrowserWindow, ipcMain, NodeEventEmitter } = require('electron')
 
+let windows = new Set()
+
 function createWindow () {
-	const win = new BrowserWindow({
+	const newWindow = new BrowserWindow({
 		width: 800,
 		height: 600,
 		webPreferences: {
@@ -9,8 +12,9 @@ function createWindow () {
 			contextIsolation: false
 		}
   	})
+	windows.add(newWindow)
 
-	win.loadFile('index.html')
+	newWindow.loadFile('index.html')
 }
 
 app.whenReady().then(createWindow)
@@ -20,7 +24,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-	if (BrowserWindow.getAllWindows().length === 0) {
+	if(BrowserWindow.getAllWindows().length === 0) {
 		createWindow()
 	}
 })
@@ -28,6 +32,8 @@ app.on('activate', () => {
 let file = ""
 app.on('open-file', (event, arg) => {
 	file = arg
+	if(windows.size !== 0)
+		createWindow()
 })
 
 ipcMain.on('query-save-location', (event, arg) => {
