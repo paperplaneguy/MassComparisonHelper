@@ -1,3 +1,9 @@
+<!---------------------------------+
+    keys:                          |
+      + fact: a fact is a pro/con. |
+      + item: set of facts.        |
+  --------------------------------->
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -8,6 +14,7 @@
     </head>
     <body>
         <script>
+            // functions ----------------------------------------------------------------------------
             var createElement = document.createElement.bind(document)
 
             function appendFactAsLi(parent, html) {
@@ -66,6 +73,9 @@
 
             let suggestionActive = false
             function factOnKeyUp(e) {
+                // updates counter
+                // removes/reinstates suggestion
+
                 function removeActiveSuggestion() {
                     Array.from( document.getElementsByClassName("suggestion") ).forEach( c => c.remove() )
                 }
@@ -93,6 +103,8 @@
             }
 
             function factOnKeyDown(e) {
+                // handles backspace
+                // etc
                 let fact = e.target
                 let li = fact.parentElement
             
@@ -138,15 +150,22 @@
                     }
                 }
 
-                if(e.keyCode == 8) { //backspace
+                if(e.keyCode == 8) {
+                    // backspace-handler
+                    let ol = li.parentElement
+
                     if(!fact.textContent) {
                         if(li.getElementsByClassName("fact").length > 1)
+                            // if there is a fact before this one
                             deleteSecondFact(fact)
-                        else if(li.parentElement.getElementsByClassName("fact").length > 1) {
+                        else if(ol.getElementsByClassName("fact").length > 1) {
+                            // if there are more fact sets
                             let previousLi = li.previousElementSibling
                             li.remove()
                             placeCaretAtEnd(previousLi.lastElementChild)
-                        }
+                        } else
+                            //if we are deleting a lonely fact
+                            placeCaretAtEnd(ol.parentElement.firstElementChild)
                         return false
                     }
                 }
@@ -175,7 +194,7 @@
                 }
             }
 
-            function getUnsortedElementList() {
+            function getUnsortedElementList() { // what ??
                 let mainOl = document.getElementsByTagName("ol")[0]
                 let sortedList = []
 
@@ -286,11 +305,13 @@
             }
         </script>
 
+        <!-- MAIN -->
         <div id="title" onkeyup="titleChanger(this.textContent)" onkeydown="return rejectEnters(event)" role="textbox" placeholder="TITLE" contenteditable></div>
         <button type="button" onclick="doReordering()">reorder</button>
         <ol>
             <li>
                 <div class="item" onkeydown="return rejectEnters(event)" role="textbox" placeholder="Item" contenteditable></div>  [<span class="counter">±8</span>]
+                <!-- Note that we are rejecting enters on .item because every new item by default has a fact -->
                 <ol type="a">
                     <li>
                         <script>
