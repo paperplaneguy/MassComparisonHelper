@@ -210,6 +210,24 @@
                 return sortedList
             }
 
+            function itemOnKeyDown(event) {
+                rejectEnters(event)
+
+                if(event.keyCode == 8) {
+                    // backspace-handler
+                    var item = event.target
+
+                    if(!item.textContent) {
+                        var itemLi = item.parentElement
+                        var facts = itemLi.getElementsByClassName("fact")
+                        console.log(facts.length)
+                        if(facts.length == 1 && !facts[0].textContent)
+                            item.parentElement.remove()
+                        return false
+                    }
+                }
+            }
+
             function rejectEnters(e) {
                 if(e.keyCode == 13)
                     return false
@@ -310,7 +328,7 @@
         <button type="button" onclick="doReordering()">reorder</button>
         <ol>
             <li>
-                <div class="item" onkeydown="return rejectEnters(event)" role="textbox" placeholder="Item" contenteditable></div>  [<span class="counter">±8</span>]
+                <div class="item" onkeydown="return itemOnKeyDown(event)" role="textbox" placeholder="Item" contenteditable></div>  [<span class="counter">±8</span>]
                 <!-- Note that we are rejecting enters on .item because every new item by default has a fact -->
                 <ol type="a">
                     <li>
