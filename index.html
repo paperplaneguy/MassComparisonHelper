@@ -273,6 +273,7 @@
             }
 
             function titleChanger(title) {
+                // changes the window title
                 if(title)
                     document.title = title + ' - mass comparison helper'
                 else
@@ -324,11 +325,15 @@
         </script>
 
         <!-- MAIN -->
-        <div id="title" onkeyup="titleChanger(this.textContent)" onkeydown="return rejectEnters(event)" role="textbox" placeholder="TITLE" contenteditable></div>
+        <div id="title" onkeyup="titleChanger(this.textContent)" onkeydown="return rejectEnters(event)" role="textbox" 
+            placeholder="TITLE" contenteditable
+        ></div>
         <button type="button" onclick="doReordering()">reorder</button>
         <ol>
             <li>
-                <div class="item" onkeydown="return itemOnKeyDown(event)" role="textbox" placeholder="Item" contenteditable></div>  [<span class="counter">±8</span>]
+                <div class="item" onkeydown="return itemOnKeyDown(event)" role="textbox" placeholder="Item"
+                    contenteditable
+                ></div>  [<span class="counter">±8</span>]
                 <!-- Note that we are rejecting enters on .item because every new item by default has a fact -->
                 <ol type="a">
                     <li>

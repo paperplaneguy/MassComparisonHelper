@@ -7,5 +7,6 @@
             "savePath": "/css"
         }
     ],
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "window.zoomPerWindow": false
 }
