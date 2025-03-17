@@ -17,22 +17,22 @@
             // functions ----------------------------------------------------------------------------
             var createElement = document.createElement.bind(document)
 
-            function appendFactAsLi(parent, html) {
-                let _listItem = createElement("li")
-                _listItem.insertAdjacentHTML('beforeend', html)
-                parent.appendChild(_listItem)
+            function appendFactToOl(parent, html) {
+                let listItem = createElement("li")
+                listItem.insertAdjacentHTML('beforeend', html)
+                parent.appendChild(listItem)
             }
 
             function deleteSecondFact(fact) {
-                let previous = fact.previousSibling
-                while(previous) {
-                    if(previous.nodeType != 1)
-                        previous.remove()
-                    else if(previous.tagName != "DIV")
-                        previous.remove()
+                let previousSibling = fact.previousSibling
+                while(previousSibling) {
+                    if(previousSibling.nodeType != 1)
+                        previousSibling.remove()
+                    else if(previousSibling.tagName != "DIV")
+                        previousSibling.remove()
                     else
                         break
-                    previous = fact.previousSibling
+                    previousSibling = fact.previousSibling
                 }
                 fact.previousElementSibling.focus();
                 ( contentEditableElement => { //focus to EOL
@@ -111,7 +111,7 @@
                 function addNewLi() {
                     let ol = li.parentElement
                     if(fact.textContent) {
-                        appendFactAsLi( ol, factHtml() )
+                        appendFactToOl( ol, factHtml() )
                         ol.lastElementChild.lastElementChild.focus()
                     } else {
                         fact.parentElement.remove()
@@ -263,7 +263,7 @@
                         deleteSecondFact(factDiv)
 
                         let ol = li.parentElement
-                        appendFactAsLi( ol, factHtml(e.textContent == "+" ? "pro" : "con", factContents) )
+                        appendFactToOl( ol, factHtml(e.textContent == "+" ? "pro" : "con", factContents) )
                         factDiv = ol.lastElementChild.lastElementChild
                         factDiv.focus()
                     }
@@ -383,9 +383,9 @@
                                 if(lastLi.getElementsByClassName("fact").length == 1 && (c => { return ( c == 'pro' ? 'con' : 'pro') })( lastLi.lastElementChild.getAttribute("placeholder") ) == fact.thing)
                                     lastLi.insertAdjacentHTML('beforeend', ' | ' + html)
                                 else
-                                    appendFactAsLi(factsList, html)
+                                    appendFactToOl(factsList, html)
                             } else
-                                appendFactAsLi(factsList, html)
+                                appendFactToOl(factsList, html)
                         })
                         listItem.appendChild(factsList)
                         itemList.appendChild(listItem)
