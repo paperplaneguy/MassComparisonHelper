@@ -9,6 +9,7 @@ npm i electron-forge
 ```
 
 ## Compilation and Installation
+Clone the git repo, `cd` into it and then run the following commands:
 ```
 npm run make
 mv ./out/MassComparisonHelper-<arch>/MassComparisonHelper.app /Applications 
